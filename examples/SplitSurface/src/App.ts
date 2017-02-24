@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 David Sehnal, licensed under Apache 2.0, See LICENSE file for more info.
+ * Copyright (c) 2016 - now David Sehnal, licensed under Apache 2.0, See LICENSE file for more info.
  */
 
 namespace LiteMol.Surface {
@@ -13,7 +13,7 @@ namespace LiteMol.Surface {
                
     export function create(target: HTMLElement) {
         
-        let spec: Plugin.Specification = {
+        const customSpecification: Plugin.Specification = {
             settings: { },
             transforms: [],
             behaviours: [
@@ -21,7 +21,6 @@ namespace LiteMol.Surface {
                 
                 Bootstrap.Behaviour.SetEntityToCurrentWhenAdded,
                 Bootstrap.Behaviour.FocusCameraOnSelect,
-                Bootstrap.Behaviour.UnselectElementOnRepeatedClick,
                 
                 // this colors the visual when a selection is created on it.
                 //Bootstrap.Behaviour.ApplySelectionToVisual,
@@ -34,6 +33,9 @@ namespace LiteMol.Surface {
                 
                 // distance to the last "clicked" element
                 Bootstrap.Behaviour.Molecule.DistanceToLastClickedElement,
+
+                // when the same element is clicked twice in a row, the selection is emptied
+                Bootstrap.Behaviour.UnselectElementOnRepeatedClick,
                 
                 // when somethinh is selected, this will create an "overlay visual" of the selected residue and show every other residue within 5ang
                 // you will not want to use this for the ligand pages, where you create the same thing this does at startup
@@ -49,6 +51,7 @@ namespace LiteMol.Surface {
 
                 Plugin.Components.Context.Log(LayoutRegion.Bottom, true),
                 Plugin.Components.Context.Overlay(LayoutRegion.Root),
+                Plugin.Components.Context.Toast(LayoutRegion.Main, true),
                 Plugin.Components.Context.BackgroundTasks(LayoutRegion.Main, true)
             ],
             viewport: {
@@ -59,18 +62,13 @@ namespace LiteMol.Surface {
             tree: { region: LayoutRegion.Left, view: Views.Entity.Tree }
         };
 
-        let plugin = new Plugin.Instance(spec, target);
+        let plugin = Plugin.create({ target, customSpecification, layoutState: { hideControls: true } });
         plugin.context.logger.message(`LiteMol ${Plugin.VERSION.number}`);
         return plugin;
     }
         
     let id = '1cbs';
     let plugin = create(document.getElementById('app')!);
-
-    LiteMol.Bootstrap.Command.Layout.SetState.dispatch(plugin.context, { 
-        // isExpanded: true,
-        hideControls: true 
-    });
 
     /**
      * Selection of a specific set of atoms...
@@ -98,26 +96,26 @@ namespace LiteMol.Surface {
     }; 
     
     // Represent an action to perform on the app state.
-    let action = Bootstrap.Tree.Transform.build();
+    let action = plugin.createTransform();
 
     // This loads the model from PDBe
-    let modelAction = action.add(plugin.context.tree.root, <Bootstrap.Tree.Transformer.To<Bootstrap.Entity.Data.String>>Transformer.Data.Download, { url: `https://www.ebi.ac.uk/pdbe/static/entry/${id}_updated.cif`, type: 'String', id })
+    let modelAction = action.add(plugin.context.tree.root, Transformer.Data.Download, { url: `https://www.ebi.ac.uk/pdbe/static/entry/${id}_updated.cif`, type: 'String', id })
         .then(Transformer.Data.ParseCif, { id }, { isBinding: true })
         .then(Transformer.Molecule.CreateFromMmCif, { blockIndex: 0 }, { isBinding: true })
         .then(Transformer.Molecule.CreateModel, { modelIndex: 0 }, { isBinding: false, ref: 'model' });
 
     // Create a selection on the model and then create a visual for it...
     modelAction
-        .then(<Bootstrap.Tree.Transformer.To<Bootstrap.Entity.Molecule.Selection>>Transformer.Molecule.CreateSelectionFromQuery, { query: complementQ, name: 'Complement', silent: true }, { })
-        .then(<any>Transformer.Molecule.CreateVisual, { style: complementStyle }, { isHidden: true });
+        .then(Transformer.Molecule.CreateSelectionFromQuery, { query: complementQ, name: 'Complement', silent: true }, { })
+        .then(Transformer.Molecule.CreateVisual, { style: complementStyle }, { isHidden: true });
 
     let sel = modelAction
-        .then(<Bootstrap.Tree.Transformer.To<Bootstrap.Entity.Molecule.Selection>>Transformer.Molecule.CreateSelectionFromQuery, { query: selectionQ, name: 'Selection', silent: true }, { })
+        .then(Transformer.Molecule.CreateSelectionFromQuery, { query: selectionQ, name: 'Selection', silent: true }, { })
     
-    sel.then(<any>Transformer.Molecule.CreateVisual, { style: Bootstrap.Visualization.Molecule.Default.ForType.get('BallsAndSticks') }, { isHidden: true })
-    sel.then(<any>Transformer.Molecule.CreateVisual, { style: selectionStyle }, { isHidden: true });
+    sel.then(Transformer.Molecule.CreateVisual, { style: Bootstrap.Visualization.Molecule.Default.ForType.get('BallsAndSticks') }, { isHidden: true })
+    sel.then(Transformer.Molecule.CreateVisual, { style: selectionStyle }, { isHidden: true });
 
-    let loadTask = Bootstrap.Tree.Transform.apply(plugin.context, action).run(plugin.context);
+    let loadTask = plugin.applyTransform(action);
 
     // to access the model after it was loaded...
     loadTask.then(() => {

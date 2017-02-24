@@ -1,4 +1,6 @@
 
+[![Version](https://img.shields.io/badge/Version-2.0.2_preview-blue.svg?style=flat)](CHANGELOG.md)
+[![Latest Release](https://img.shields.io/badge/Latest%20Release-1.0-blue.svg?style=flat)](https://github.com/dsehnal/LiteMol/releases/tag/v1.0)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg?style=flat)](https://github.com/dsehnal/LiteMol/blob/master/LICENSE)
 
 ![Logo](web/assets/img/lm_logo_small.png)
@@ -13,18 +15,18 @@ features include, but are not limited to, displaying 3D coordinates of molecules
 You can see LiteMol in action [here](https://webchemdev.ncbr.muni.cz/LiteMol/).
 
 The program is being developed by David Sehnal from the CEITEC/Masaryk University in Brno, Czech Republic
-in collaboration (espectially with Mandar Deshpande) with PDBe in Hinxton, Cambridge, UK.
+in collaboration (especially with Mandar Deshpande) with PDBe in Hinxton, Cambridge, UK.
 
-Table of contents
+Table of Contents
 =================
 
 * [Getting Started](#getting-started)
 * [Project Structure Overview](#project-structure-overview)
 * [Building](#building)
 * [License](#license)
-* [Support](#Support)
-* [Contributing](#Contributing)
-* [Roadmap](#roadmap)
+* [Support](#support)
+* [Contributing](#contributing)
+* [Releases and Roadmap](#releases-and-roadmap)
 * [FAQ](#faq)
 
 Getting Started
@@ -34,31 +36,34 @@ This repository provides the source code for the LiteMol molecular visualizer.
 Several examples of usage are also provided. It is recommended to use [TypeScript](https://www.typescriptlang.org/) for building apps based 
 on LiteMol (or any other non-trivial JavaScript app for that matter), because you will get code completion and type checking.
 
-If you are interested in using LiteMol for simple visualization and do not need any special functionality, we suggest that you use the [PDB Component Library](https://www.ebi.ac.uk/pdbe/pdb-component-library/doc.html#a_LiteMol).
-
-For feature overview and usage of the app please refer to our [wiki](https://webchem.ncbr.muni.cz/Wiki/LiteMol:UserManual).
+- An initial walkthrough for how to go about including LiteMol in your web pages can be found in the [FAQ section](#what-are-the-simplest-steps-to-load-a-molecule-in-litemol) and in the [SimpleController](examples/SimpleController) example.
+- Auto-generated source code documentation is available [here](https://webchemdev.ncbr.muni.cz/LiteMol/SourceDocs/).
+- If you are interested in using LiteMol for simple visualization and do not need any special functionality, you can use the [PDB Component Library](https://www.ebi.ac.uk/pdbe/pdb-component-library/doc.html#a_LiteMol) that provides an Angular wrapper for LiteMol.
+- A walkthrough for integrating LiteMol is available [here](docs/integrating.md). 
+- For basic information about extending LiteMol see the [extending](docs/extending.md) document.
+- For feature overview and usage of the ``Viewer`` app please refer to our [wiki](https://webchem.ncbr.muni.cz/Wiki/LiteMol:UserManual).
 
 Project Structure Overview
 ========
 
-The code is structured into several parts:
+The LiteMol library code is structured into four modules:
 
   - `Core` - parsing, basic data representation
   - `Visualization` - wrapper around WebGL + geometry
   - `Bootstrap` - higher level wrapper around Core and Visualization
   - `Plugin` - React based UI
-  - `Viewer` - Host for plugin + example usage of the plugin
+
+Auto-generated source code documentation is available [here](https://webchemdev.ncbr.muni.cz/LiteMol/SourceDocs/).
+
+Additionally, the [LiteMol Viewer](https://webchemdev.ncbr.muni.cz/LiteMol/Viewer/) application is available:
+
+  - `Viewer` - Host for plugin, integration with the PDBe services (electron density, validation, etc.) and CoordinateServer
+
   
 Examples
 --------
 
-Examples are located in the folder `LiteMol.Viewer/Examples`.
-
-  - `Commands` ([view live](https://webchemdev.ncbr.muni.cz/LiteMol/Examples/Commands)) - Shows how to control the plugin programmatically, how to consume plugin interactions, focus on certain elements in a molecule, etc.
-  - `CustomControls` ([view live](https://webchemdev.ncbr.muni.cz/LiteMol/Examples/CustomControls)) - Shows how to construct a custom control scheme for the plugin.
-  - `CustomDensity` ([view live](https://webchemdev.ncbr.muni.cz/LiteMol/Examples/CustomDensity)) - Shows how to download a PDB file, parse it, download density data and allow user interaction with them.
-  - `SplitSurface` ([view live](https://webchemdev.ncbr.muni.cz/LiteMol/Examples/SplitSurface)) - Shows how to create two complementary selections and display a surface for each of them.
-  - `BinaryCIFInspect` ([view live](https://webchemdev.ncbr.muni.cz/LiteMol/Examples/BinaryCIFInspect)) - A simple app that enables a comparison of data inside CIF and BinaryCIF. Also shows how to use the LiteMol.Core code directly without including/instancing the plugin.
+See the [Examples folder](examples).
 
 Building
 ========
@@ -80,10 +85,14 @@ To build the minified version of the plugin and the stylesheets, use
     gulp
     gulp Dist-min
         
-This will create the files `dist/LiteMol-*.min.js` and `dist/css/LiteMol-plugin*.min.css`.
+This will create the files `dist/js/LiteMol-*.min.js` and `dist/css/LiteMol-plugin*.min.css`.
 
-When embedding the pluing in your pages, do not forget to include the `dist/css` and `dist/fonts` folders with 
+When embedding the plugin in your pages, do not forget to include the `dist/css` and `dist/fonts` folders with 
 the required style sheets and fonts.
+
+### Modifying Examples
+
+Go to the [Examples folder](examples) to learn how to modify individual examples.
 
 License
 =======
@@ -93,8 +102,10 @@ This project is licensed under the Apache 2.0 license. See the `LICENSE` file fo
 Support
 =======
 
-If you have any questions, do not hesitate to email the author, use the GitHub forum, 
+If you have any questions or feature requests, do not hesitate to email the author, use the GitHub forum, 
 or the LiteMol [mailing list](https://listserver.ebi.ac.uk/mailman/listinfo/litemol).
+
+Makes sure to check out the [documentation](docs) and [examples](examples).
 
 Contributing
 =======
@@ -104,7 +115,7 @@ We would like to know about your use cases of the program, bug reports, and feat
 Our plan is to make a stable LiteMol Core Library (this repository) and allow users to contribute 
 by writing extensions handling their specific use cases of the application. The extension support is currently under development (see the Roadmap below).
 
-Roadmap
+Releases and Roadmap
 =======
 
 LiteMol is still in active development. All things in this section are a subject to change (especially based on user feedback). 
@@ -112,6 +123,14 @@ Currently, our priority is to improve these things:
 
 * Creating documentation and adding more usage examples.
 * Fixing bugs in the code.
+
+Releases
+--------
+
+The latest stable release of LiteMol is the [version 1.0](https://github.com/dsehnal/LiteMol/releases/tag/v1.0).
+
+Currently, the version 2.0 is being developed and is in a "preview" phase, meaning that a number of breaking changes will be introduced.
+Migration summary can be found [here](docs/migrating/1-to-2.md).
 
 Short term goals 
 ---------
@@ -122,12 +141,13 @@ These features are planned to be introduced during the first half of 2017.
 * Improving extension support: 
   * Streamline the process of extension creation.
   * Support for dynamic extension loading.
+  * _Will require breaking changes._
 * Support for saving and restoring the state of the application.
-* More visual primitives (spheres, cylinders, arrows, etc.)
+  * _Will require breaking changes._
+* More visual primitives (spheres, cylinders, arrows, etc.). This is partially implemented.
 * Support for labels in the 3D scene.  
 * Improved internal data representation of molecules.
-* Secondary structure detection.
-* Restructure the code and update the build process to support NPM.
+  * _Will require breaking changes._
 
 Long term goals
 ----------
@@ -154,15 +174,77 @@ FAQ
 How do I include LiteMol in my page?
 ------------
 
-You can include the plugin as shown in the `src/Viewer` folder.
-For more advanced use cases, please refer to `examples`.
+You can include the plugin as shown in the `src/Viewer` folder. For a simple use case,
+please check the `SimpleController` examples. For further examples, please refer to `examples` directory.
 
 Alternatively, you can use the Angular LiteMol wrapper from the [PDB Component Library](https://www.ebi.ac.uk/pdbe/pdb-component-library/doc.html#a_LiteMol).
+
+
+What are the simplest steps to load a molecule in LiteMol?
+------------
+
+- Start by downloading the code:
+
+    ```
+    git clone https://github.com/dsehnal/LiteMol.git
+    ```
+
+    or [download it as ZIP](https://github.com/dsehnal/LiteMol/archive/master.zip). No building is required, only the `dist` folder in the archive is needed.
+
+- From ``dist`` folder, copy the folders ``css``, ``fonts``, and
+the file ``js/LiteMol-plugin.js`` (or ``js/LiteMol-plugin.min.js`` for production).
+
+- Include the CSS and JavaScript in your page:
+
+    ```html
+    <link rel="stylesheet" href="css/LiteMol-plugin.css" type="text/css" />
+    <script src="js/LiteMol-plugin.js"></script>
+    ``` 
+
+    You can include ``css/LiteMol-plugin-light.css`` or ``css/LiteMol-plugin-blue.css`` for different
+    color schemes.
+
+    For production, include ``LiteMol-plugin.min.js`` and ``css/LiteMol-plugin.min.css`` instead. 
+
+- Create a target for the plugin:
+
+    ```html
+    <div id="litemol" style="width: 640px; height: 480px; margin-top: 200px; position: relative"></div>
+    ```
+
+- Create the plugin instance:
+
+    ```JavaScript
+    var plugin = LiteMol.Plugin.create({ target: '#litemol' });
+    ```
+    
+- Load the molecule:
+
+    ```JavaScript
+    plugin.loadMolecule({
+        id: '1tqn',
+        url: 'https://www.ebi.ac.uk/pdbe/static/entry/1tqn_updated.cif',
+        format: 'cif' // default
+    });
+    ```
+
+    To load a file in the PDB format, use 
+
+    ```JavaScript
+    url: 'https://www.ebi.ac.uk/pdbe/entry-files/download/pdb1tqn.ent',
+    format: 'pdb'
+    ```
+
+    If you decide to use a different URL and it does not work, make sure that the server
+    in question supports [cross-origin requests](https://en.wikipedia.org/wiki/Cross-Origin_Resource_Sharing).
+
+Please check the [SimpleController example](examples/SimpleController) for more information.
 
 What external dependencies do I need to include LiteMol?
 ------------
 
 LiteMol does not require any external dependencies.
+
 
 How do I change the color scheme of the plugin?
 ------------

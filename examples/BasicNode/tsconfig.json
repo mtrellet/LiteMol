@@ -1,0 +1,22 @@
+{
+  "compileOnSave": false,
+  "compilerOptions": {
+    "noImplicitAny": true,
+    "noEmitOnError": true,
+    "removeComments": false,
+    "sourceMap": false,
+    "declaration": false,
+    "strictNullChecks": true,
+    "noImplicitThis": true,
+    "module": "commonjs",
+    "lib": [ "es6", "dom" ],
+    "target": "es6",
+    "rootDir": "./src",
+    "types": ["node"],
+    "skipDefaultLibCheck": true,
+    "outDir": "./build"
+  },
+  "files": [
+    "src/App.ts"
+  ]
+}

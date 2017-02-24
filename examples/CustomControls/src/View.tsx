@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 David Sehnal, licensed under Apache 2.0, See LICENSE file for more info.
+ * Copyright (c) 2016 - now David Sehnal, licensed under Apache 2.0, See LICENSE file for more info.
  */
 
 namespace LiteMol.Custom {
@@ -10,8 +10,7 @@ namespace LiteMol.Custom {
     import Transformer = Bootstrap.Entity.Transformer;
  
     export class RepresentationView extends LiteMol.Plugin.Views.Transform.ControllerBase<
-        Bootstrap.Components.Transform.Controller<LiteMol.Custom.CreateRepresentationParams>, // you dont have to use these full type annotations, and just use "any" type instead, but then you will loose code completition. 
-        LiteMol.Custom.CreateRepresentationParams> {
+        Bootstrap.Components.Transform.Controller<LiteMol.Custom.CreateRepresentationParams>> { // you dont have to use these full type annotations, and just use "any" type instead, but then you will loose code completition. 
                         
         private asm() {
 
@@ -53,9 +52,9 @@ namespace LiteMol.Custom {
             let model = molecule.models[0];
             let options = ['Asymmetric Unit'];
             if (params.assemblyNames && params.assemblyNames.length > 0) options.push('Assembly');
-            if (model.symmetryInfo) options.push('Symmetry');
+            if (model.data.symmetryInfo) options.push('Symmetry');
             let modelIndex = molecule.models.length > 1 
-                ? <Controls.Slider label='Model' onChange={v => this.updateParams({ modelIndex: v - 1 })} min={1} max={molecule.models.length} step={1} value={params.modelIndex + 1} title='Interaction radius.' />
+                ? <Controls.Slider label='Model' onChange={v => this.updateParams({ modelIndex: v - 1 })} min={1} max={molecule.models.length} step={1} value={params.modelIndex! + 1} title='Interaction radius.' />
                 : void 0;
 
             return <div>

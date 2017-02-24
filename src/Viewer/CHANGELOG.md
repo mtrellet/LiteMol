@@ -1,3 +1,50 @@
+# 1.3.1
+* Automatic detail for molecular surfaces => improved performance for large molecules.
+* Higher automatic detail for small molecules.
+
+# 1.3.0
+* Updated for "LiteMol 2". 
+
+# 1.2.1
+* Performance updates thanks to rewrite of the Computation/Task API.
+
+# 1.2.0
+* Support for density streaming vie DensityServer. 
+
+# 1.1.14
+* Support for PDBe EMDB density data.
+
+# 1.1.13
+* It is now possible to select 'Show: Everything' in the dynamic denisty surface behaviour.
+* Fixed/improved support for CA/P-only models.
+
+# 1.1.12
+* Help for viewport.
+* Touch slabbing.
+* Mouse wheel now works similar to PyMOL.
+* Basic ValidatorDB support.
+
+# 1.1.11
+* Added support for popup messages (toasts).
+* Fog no longer affects selected residue, ambience, and dynamic density data.
+* Expandable transform controls no longer collapse when a value changes. 
+
+# 1.1.10
+* Changed how visual interactivity works.
+  - Repeatedly clicking on any element clears the selection.
+  - Clicking on dynamically created "ambient" residues now shifts the selection.
+
+# 1.1.9
+* Ability to manually decompress binary AJAX responses.
+* Support for specifying absolute iso values for density data.
+
+# 1.1.8
+* Added secondary structure (helices and sheets) approximation for cartoons visualization if not present in the input file.
+* Fixed molecule highlight info to show authAsymId instead of asymId for highlighted residues.
+
+# 1.1.7
+* Support for ?loadFromURL=url and loadFromURLFormat=format query params,
+
 # 1.1.6
 * Support for ?loadFromPDB=ID URL query to enable loading of default structures.
 

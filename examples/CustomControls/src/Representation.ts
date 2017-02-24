@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 David Sehnal, licensed under Apache 2.0, See LICENSE file for more info.
+ * Copyright (c) 2016 - now David Sehnal, licensed under Apache 2.0, See LICENSE file for more info.
  */
 
 namespace LiteMol.Custom {
@@ -23,7 +23,7 @@ namespace LiteMol.Custom {
             to: [Entity.Action],
             defaultParams: (ctx, e) => {
                 let m = Bootstrap.Utils.Molecule.findMolecule(e)!.props.molecule.models[0]; 
-                let asm = m.assemblyInfo;
+                let asm = m.data.assemblyInfo;
                 if (!asm || !asm.assemblies.length) return { source: 'Asymmetric Unit', assemblyNames: [] };
                 return { source: 'Asymmetric Unit', assemblyNames: asm.assemblies.map(a => a.name), modelIndex: 0 };                
             }

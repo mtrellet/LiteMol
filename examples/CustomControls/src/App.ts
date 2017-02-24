@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 David Sehnal, licensed under Apache 2.0, See LICENSE file for more info.
+ * Copyright (c) 2016 - now David Sehnal, licensed under Apache 2.0, See LICENSE file for more info.
  */
 
 namespace LiteMol.Custom {
@@ -12,7 +12,7 @@ namespace LiteMol.Custom {
                
     export function create(target: HTMLElement) {
         
-        let spec: Plugin.Specification = {
+        let customSpecification: Plugin.Specification = {
             settings: {
                 // currently these are all the 'global' settings available 
                 'molecule.model.defaultQuery': `residues({ name: 'ALA' })`,
@@ -81,6 +81,9 @@ namespace LiteMol.Custom {
                 
                 // distance to the last "clicked" element
                 Bootstrap.Behaviour.Molecule.DistanceToLastClickedElement,
+
+                // when the same element is clicked twice in a row, the selection is emptied
+                Bootstrap.Behaviour.UnselectElementOnRepeatedClick,
                 
                 // when somethinh is selected, this will create an "overlay visual" of the selected residue and show every other residue within 5ang
                 // you will not want to use this for the ligand pages, where you create the same thing this does at startup
@@ -102,6 +105,7 @@ namespace LiteMol.Custom {
 
                 Plugin.Components.Context.Log(LayoutRegion.Bottom, true),
                 Plugin.Components.Context.Overlay(LayoutRegion.Root),
+                Plugin.Components.Context.Toast(LayoutRegion.Main, true),
                 Plugin.Components.Context.BackgroundTasks(LayoutRegion.Main, true)
             ],
             viewport: {
@@ -113,26 +117,24 @@ namespace LiteMol.Custom {
             tree: void 0 // { region: LayoutRegion.Left, view: Views.Entity.Tree }
         };
 
-        let plugin = new Plugin.Instance(spec, target);
+        let plugin = Plugin.create({ target, customSpecification, layoutState: { isExpanded: true } });
         plugin.context.logger.message(`LiteMol Plugin ${Plugin.VERSION.number}`);
         return plugin;
     }
     
     // create the instance...
     
-    let id = '1grm';
+    let id = '1tqn';
     let plugin = create(document.getElementById('app')!);
 
-    LiteMol.Bootstrap.Command.Layout.SetState.dispatch(plugin.context, { isExpanded: true });
-
-    let action = Bootstrap.Tree.Transform.build();
+    let action = plugin.createTransform();
     
-    action.add(plugin.context.tree.root, <Bootstrap.Tree.Transformer.To<Bootstrap.Entity.Data.String>>Transformer.Data.Download, { url: `https://www.ebi.ac.uk/pdbe/static/entry/${id}_updated.cif`, type: 'String', id })
+    action.add(plugin.context.tree.root, Transformer.Data.Download, { url: `https://www.ebi.ac.uk/pdbe/static/entry/${id}_updated.cif`, type: 'String', id })
         .then(Transformer.Data.ParseCif, { id }, { isBinding: true })
         .then(Transformer.Molecule.CreateFromMmCif, { blockIndex: 0 }, { ref: 'molecule' })
         .then(CreateRepresentation, { });
 
-     Bootstrap.Tree.Transform.apply(plugin.context, action).run(plugin.context).then(() => {
+     plugin.applyTransform(action).then(() => {
          console.log(plugin.context.select('molecule'));
      });        
 }

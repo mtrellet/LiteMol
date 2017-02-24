@@ -1,16 +1,14 @@
 /*
- * Copyright (c) 2016 David Sehnal, licensed under Apache 2.0, See LICENSE file for more info.
+ * Copyright (c) 2016 - now David Sehnal, licensed under Apache 2.0, See LICENSE file for more info.
  */
 
 namespace LiteMol.Viewer.PDBe.Validation {
     import Entity = Bootstrap.Entity;
     import Transformer = Bootstrap.Entity.Transformer;
-            
-    export interface ReportProps extends Entity.Behaviour.Props<Interactivity.Behaviour> {}
-    export interface Report extends Entity<Report, ReportType, ReportProps> { }         
-    export interface ReportType extends Entity.Type<ReportType, Report, ReportProps> { }   
-    export const Report = Entity.create<Report, ReportType, ReportProps>({ name: 'PDBe Molecule Validation Report', typeClass: 'Behaviour', shortName: 'VR', description: 'Represents PDBe validation report.' });
     
+    export interface Report extends Entity<Entity.Behaviour.Props<Interactivity.Behaviour>> { }
+    export const Report = Entity.create<Entity.Behaviour.Props<Interactivity.Behaviour>>({ name: 'PDBe Molecule Validation Report', typeClass: 'Behaviour', shortName: 'VR', description: 'Represents PDBe validation report.' });
+
     namespace Api {        
         export function getResidueId(seqNumber: number, insCode: string | null) {
             var id = seqNumber.toString();
@@ -119,7 +117,7 @@ namespace LiteMol.Viewer.PDBe.Validation {
     
     namespace Theme {    
         const colorMap = (function () {
-            let colors = new Map<number, LiteMol.Visualization.Color>();
+            let colors = Core.Utils.FastMap.create<number, LiteMol.Visualization.Color>();
             colors.set(0, { r: 0, g: 1, b: 0 }); 
             colors.set(1, { r: 1, g: 1, b: 0 });
             colors.set(2, { r: 1, g: 0.5, b: 0 });
@@ -131,11 +129,11 @@ namespace LiteMol.Viewer.PDBe.Validation {
         const selectionColor = <LiteMol.Visualization.Color>{ r: 0, g: 0, b: 1 };
         const highlightColor = <LiteMol.Visualization.Color>{ r: 1, g: 0, b: 1 };
     
-        function createResidueMapNormal(model: LiteMol.Core.Structure.MoleculeModel, report: any) {
-            let map = new Uint8Array(model.residues.count);            
+        function createResidueMapNormal(model: LiteMol.Core.Structure.Molecule.Model, report: any) {
+            let map = new Uint8Array(model.data.residues.count);            
             let mId = model.modelId;
-            let { asymId, entityId, seqNumber, insCode } = model.residues;                        
-            for (let i = 0, _b = model.residues.count; i < _b; i++) {                
+            let { asymId, entityId, seqNumber, insCode } = model.data.residues;                        
+            for (let i = 0, _b = model.data.residues.count; i < _b; i++) {                
                 let e = Api.getEntry(report, mId, entityId[i], asymId[i], Api.getResidueId(seqNumber[i], insCode[i]));
                 if (e) {
                     map[i] = Math.min(e.numIssues, 3);
@@ -144,15 +142,15 @@ namespace LiteMol.Viewer.PDBe.Validation {
             return map;            
         }
         
-        function createResidueMapComputed(model: LiteMol.Core.Structure.MoleculeModel, report: any) {
-            let map = new Uint8Array(model.residues.count);            
+        function createResidueMapComputed(model: LiteMol.Core.Structure.Molecule.Model, report: any) {
+            let map = new Uint8Array(model.data.residues.count);            
             let mId = model.modelId;
             let parent = model.parent!;
-            let { entityId, seqNumber, insCode, chainIndex } = model.residues; 
-            let { sourceChainIndex } = model.chains;
-            let { asymId } = parent.chains;
+            let { entityId, seqNumber, insCode, chainIndex } = model.data.residues; 
+            let { sourceChainIndex } = model.data.chains;
+            let { asymId } = parent.data.chains;
                                    
-            for (let i = 0, _b = model.residues.count; i < _b; i++) {     
+            for (let i = 0, _b = model.data.residues.count; i < _b; i++) {     
                 let aId = asymId[sourceChainIndex![chainIndex[i]]];           
                 let e = Api.getEntry(report, mId, entityId[i], aId, Api.getResidueId(seqNumber[i], insCode[i]));
                 if (e) {
@@ -164,15 +162,15 @@ namespace LiteMol.Viewer.PDBe.Validation {
     
         export function create(entity: Bootstrap.Entity.Molecule.Model, report: any) {
             let model = entity.props.model;
-            let map = model.source === Core.Structure.MoleculeModelSource.File 
+            let map = model.source === Core.Structure.Molecule.Model.Source.File 
                 ? createResidueMapNormal(model, report)
                 : createResidueMapComputed(model, report);
             
-            let colors = new Map<string, LiteMol.Visualization.Color>();
+            let colors = Core.Utils.FastMap.create<string, LiteMol.Visualization.Color>();
             colors.set('Uniform', defaultColor)
             colors.set('Selection', selectionColor)
             colors.set('Highlight', highlightColor);
-            let residueIndex = model.atoms.residueIndex;            
+            let residueIndex = model.data.atoms.residueIndex;            
             
             let mapping = Visualization.Theme.createColorMapMapping(i => map[residueIndex[i]], colorMap, defaultColor);
             return Visualization.Theme.createMapping(mapping, { colors, interactive: true, transparency: { alpha: 1.0 } });
@@ -187,14 +185,12 @@ namespace LiteMol.Viewer.PDBe.Validation {
             to: [Report],
             defaultParams: () => ({})
         }, (context, a, t) => { 
-            return Bootstrap.Task.create<Report>(`Validation Report (${t.params.id})`, 'Normal', ctx => {
-                ctx.update('Parsing...');
-                ctx.schedule(() => {
-                    let data = JSON.parse(a.props.data);
-                    let model = data[t.params.id!];
-                    let report = Api.createReport(model || {});                    
-                    ctx.resolve(Report.create(t, { label: 'Validation Report', behaviour: new Interactivity.Behaviour(context, report) }))
-                });
+            return Bootstrap.Task.create<Report>(`Validation Report (${t.params.id})`, 'Normal', async ctx => {
+                await ctx.updateProgress('Parsing...');                
+                let data = JSON.parse(a.props.data);
+                let model = data[t.params.id!];
+                let report = Api.createReport(model || {});                    
+                return Report.create(t, { label: 'Validation Report', behaviour: new Interactivity.Behaviour(context, report) });
             }).setReportTime(true);
         }       
     );
@@ -209,7 +205,7 @@ namespace LiteMol.Viewer.PDBe.Validation {
     }, (context, a, t) => {        
         let id = a.props.molecule.id.trim().toLocaleLowerCase();                    
         let action = Bootstrap.Tree.Transform.build()
-            .add(a, <Bootstrap.Tree.Transformer.To<Entity.Data.String>>Transformer.Data.Download, { url: `https://www.ebi.ac.uk/pdbe/api/validation/residuewise_outlier_summary/entry/${id}`, type: 'String', id, description: 'Validation Data' })
+            .add(a, Transformer.Data.Download, { url: `https://www.ebi.ac.uk/pdbe/api/validation/residuewise_outlier_summary/entry/${id}`, type: 'String', id, description: 'Validation Data', title: 'Validation' })
             .then(Create, { id }, { isBinding: true });
 
         return action;
@@ -223,14 +219,13 @@ namespace LiteMol.Viewer.PDBe.Validation {
         to: [Entity.Action],
         defaultParams: () => ({})  
     }, (context, a, t) => {        
-            return Bootstrap.Task.create<Entity.Action>('Validation Coloring', 'Background', ctx => {            
+            return Bootstrap.Task.create<Entity.Action>('Validation Coloring', 'Background', async ctx => {            
             let molecule = Bootstrap.Tree.Node.findAncestor(a, Bootstrap.Entity.Molecule.Molecule);
             if (!molecule)  {
-                ctx.reject('No suitable parent found.');
-                return;
+                throw 'No suitable parent found.';
             } 
                 
-            let themes = new Map<number, Visualization.Theme>();      
+            let themes = Core.Utils.FastMap.create<number, Visualization.Theme>();      
             let visuals = context.select(Bootstrap.Tree.Selection.byValue(molecule).subtree().ofType(Bootstrap.Entity.Molecule.Visual));            
             for (let v of visuals) {
                 let model = Bootstrap.Utils.Molecule.findModel(v);
@@ -243,7 +238,7 @@ namespace LiteMol.Viewer.PDBe.Validation {
                 Bootstrap.Command.Visual.UpdateBasicTheme.dispatch(context, { visual: v as any, theme });
             }                                   
             context.logger.message('Validation coloring applied.');
-            ctx.resolve(Bootstrap.Tree.Node.Null);
+            return Bootstrap.Tree.Node.Null;
         });
     });
 }

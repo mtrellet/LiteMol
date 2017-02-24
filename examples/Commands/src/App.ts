@@ -74,7 +74,7 @@ namespace LiteMolPluginInstance {
     
     let moleculeId = '1cbs';
     
-    let plugin: Plugin.Instance;
+    let plugin: Plugin.Controller;
     let interactivityTarget = document.getElementById('interactions')!;
     function showInteraction(type: string, i: Bootstrap.Interactivity.Molecule.SelectionInfo | undefined) {
         if (!i) { // can be undefined meaning "empty interaction"
@@ -89,7 +89,7 @@ namespace LiteMolPluginInstance {
     // this applies the transforms we will build later
     // it results a promise-like object that you can "then/catch".
     function applyTransforms(actions: Tree.Transform.Source) {
-        return Tree.Transform.apply(plugin.context, actions).run(plugin.context);
+        return plugin.applyTransform(actions);
     }
     
     function selectNodes(what: Tree.Selector<Bootstrap.Entity.Any>) {
@@ -108,7 +108,6 @@ namespace LiteMolPluginInstance {
         // it will not work on IE <= 10 (no way around this, no WebGL in IE10)
         // also needs ES6 Map and Set -- so check browser compatibility for that, you can try a polyfill using modernizr or something 
         plugin = create(document.getElementById('app')!);
-        Command.Layout.SetState.dispatch(plugin.context, { hideControls: true })
                 
         let select = Event.Molecule.ModelSelect.getStream(plugin.context).subscribe(e => showInteraction('select', e.data));
         // to stop listening, select.dispose();
@@ -129,6 +128,36 @@ namespace LiteMolPluginInstance {
     addButton('Hide Controls', () => Command.Layout.SetState.dispatch(plugin.context, { hideControls: true }));
     addButton('Expand', () => Command.Layout.SetState.dispatch(plugin.context, { isExpanded: true }));
     addButton('Set Background', () => Command.Layout.SetViewportOptions.dispatch(plugin.context, { clearColor: CoreVis.Color.fromRgb(255, 255, 255) }));
+    addSeparator();
+    addButton('Collapsed Controls: Portrait', () => {
+        let container = document.getElementById('app')! as HTMLElement;
+        container.className = 'app-portrait';
+        plugin.command(Command.Layout.SetState, { collapsedControlsLayout: Bootstrap.Components.CollapsedControlsLayout.Portrait, hideControls: false });
+    });
+    addButton('Collapsed Controls: Landscape', () => {
+        let container = document.getElementById('app')! as HTMLElement;
+        container.className = 'app-landscape';
+        plugin.command(Command.Layout.SetState, { collapsedControlsLayout: Bootstrap.Components.CollapsedControlsLayout.Landscape, hideControls: false });
+    });
+    addButton('Collapsed Controls: Outside (Default)', () => {
+        let container = document.getElementById('app')! as HTMLElement;
+        container.className = 'app-default';
+        plugin.command(Command.Layout.SetState, { collapsedControlsLayout: Bootstrap.Components.CollapsedControlsLayout.Outside, hideControls: false });
+    });
+    addSeparator();
+    addButton('Control Regions: Hide Left and Bottom, Sticky Right', () => {
+        plugin.command(Command.Layout.SetState, { 
+            regionStates: { 
+                [Bootstrap.Components.LayoutRegion.Left]: 'Hidden', 
+                [Bootstrap.Components.LayoutRegion.Bottom]: 'Hidden',
+                [Bootstrap.Components.LayoutRegion.Right]: 'Sticky' 
+            }, 
+            hideControls: false 
+        });
+    });
+    addButton('Control Regions: Show All', () => {
+        plugin.command(Command.Layout.SetState, { regionStates: { }, hideControls: false });
+    });
     
     addSeparator();
     addHeader('Basics');
@@ -138,7 +167,7 @@ namespace LiteMolPluginInstance {
         let id = moleculeId;        
         // this builds the transforms needed to create a molecule
         let action = Transform.build()
-            .add(plugin.context.tree.root, <Tree.Transformer.To<Entity.Data.String>>Transformer.Data.Download, { url: `https://www.ebi.ac.uk/pdbe/static/entry/${id}_updated.cif`, type: 'String', id })
+            .add(plugin.context.tree.root, Transformer.Data.Download, { url: `https://www.ebi.ac.uk/pdbe/static/entry/${id}_updated.cif`, type: 'String', id })
             .then(Transformer.Data.ParseCif, { id }, { isBinding: true })
             .then(Transformer.Molecule.CreateFromMmCif, { blockIndex: 0 }, { isBinding: true })
             .then(Transformer.Molecule.CreateModel, { modelIndex: 0 }, { isBinding: false, ref: 'model' })
@@ -166,27 +195,26 @@ namespace LiteMolPluginInstance {
             theme: { template: Visualization.Molecule.Default.UniformThemeTemplate, colors: Visualization.Molecule.Default.UniformThemeTemplate.colors!.set('Uniform', { r: 0.4, g: 0.4, b: 0.4 }), transparency: { alpha: 0.75 } }
         }   
         
-         let ligandQ = Query.residues({ name: 'REA' }); // here you will fill in the whole info 
-         let ambQ =  Query.residues({ name: 'REA' }).ambientResidues(5); // adjust the radius
-                
-        
+        let ligandQ = Query.residues({ name: 'REA' }); // here you will fill in the whole info 
+        let ambQ =  Query.residues({ name: 'REA' }).ambientResidues(5); // adjust the radius
+
         let id = '1cbs:REA'
         let url = `https://webchemdev.ncbr.muni.cz/CoordinateServer/1cbs/ligandInteraction?name=REA`; // here you will fill in the full server etc ...
         let action = Transform.build()
-            .add(plugin.context.tree.root, <Tree.Transformer.To<Entity.Data.String>>Transformer.Data.Download, { url, type: 'String', id })
+            .add(plugin.context.tree.root, Transformer.Data.Download, { url, type: 'String', id })
             .then(Transformer.Data.ParseCif, { id }, { isBinding: true })
             .then(Transformer.Molecule.CreateFromMmCif, { blockIndex: 0 }, { isBinding: true })
             .then(Transformer.Molecule.CreateModel, { modelIndex: 0 }, { isBinding: false, ref: 'ligand-model' });
             
-        action.then(<Bootstrap.Tree.Transformer.To<Entity.Molecule.Selection>>Transformer.Molecule.CreateSelectionFromQuery, { query: ambQ, name: 'Ambience' }, { isBinding: true })
-            .then(<Bootstrap.Tree.Transformer.To<Entity.Molecule.Visual>>Transformer.Molecule.CreateVisual, { style: ambStyle });
-        action.then(<Bootstrap.Tree.Transformer.To<Entity.Molecule.Selection>>Transformer.Molecule.CreateSelectionFromQuery, { query: ligandQ, name: 'Ligand' }, { isBinding: true })
-            .then(<Bootstrap.Tree.Transformer.To<Entity.Molecule.Visual>>Transformer.Molecule.CreateVisual, { style: ligandStyle }, { ref: 'ligand-visual' });   
+        action.then(Transformer.Molecule.CreateSelectionFromQuery, { query: ambQ, name: 'Ambience' }, { isBinding: true })
+            .then(Transformer.Molecule.CreateVisual, { style: ambStyle });
+        action.then(Transformer.Molecule.CreateSelectionFromQuery, { query: ligandQ, name: 'Ligand' }, { isBinding: true })
+            .then(Transformer.Molecule.CreateVisual, { style: ligandStyle }, { ref: 'ligand-visual' });   
             
         applyTransforms(action)
             .then(() => {
                 // we select the ligand to display the density around it if it's loaded
-                Command.Molecule.CreateSelectInteraction.dispatch(plugin.context, { visual: <any>selectNodes('ligand-visual')[0], query: Query.everything() })
+                Command.Molecule.CreateSelectInteraction.dispatch(plugin.context, { entity: selectNodes('ligand-visual')[0], query: Query.everything() })
             });
             //.catch(e => reportError(e));
     });
@@ -209,9 +237,9 @@ namespace LiteMolPluginInstance {
     
     function createSelectionTheme(color: CoreVis.Color) {
         // for more options also see Bootstrap/Visualization/Molecule/Theme
-        let colors = new Map<string, CoreVis.Color>();
-        colors.set('Uniform', CoreVis.Color.fromHex(0xffffff))
-        colors.set('Selection', color)
+        let colors = LiteMol.Core.Utils.FastMap.create<string, CoreVis.Color>();
+        colors.set('Uniform', CoreVis.Color.fromHex(0xffffff));
+        colors.set('Selection', color);
         colors.set('Highlight', CoreVis.Theme.Default.HighlightColor);
         return Visualization.Molecule.uniformThemeProvider(<any>void 0, { colors });
     }
@@ -223,9 +251,9 @@ namespace LiteMolPluginInstance {
         let query = Query.sequence('1', 'A', { seqNumber: 10 }, { seqNumber: 25 });
         let theme = createSelectionTheme(CoreVis.Color.fromHex(0x123456));
         let action = Transform.build()
-            .add(visual, <Bootstrap.Tree.Transformer.To<Entity.Molecule.Selection>>Transformer.Molecule.CreateSelectionFromQuery, { query, name: 'My name' }, { ref: 'sequence-selection' })
+            .add(visual, Transformer.Molecule.CreateSelectionFromQuery, { query, name: 'My name' }, { ref: 'sequence-selection' })
             // here you can create a custom style using code similar to what's in 'Load Ligand'
-            .then(<Bootstrap.Tree.Transformer.To<Entity.Molecule.Visual>>Transformer.Molecule.CreateVisual, { style: Visualization.Molecule.Default.ForType.get('BallsAndSticks') });
+            .then(Transformer.Molecule.CreateVisual, { style: Visualization.Molecule.Default.ForType.get('BallsAndSticks') });
             
         applyTransforms(action).then(() => {                
             Command.Visual.UpdateBasicTheme.dispatch(plugin.context, { visual, theme });
@@ -258,7 +286,7 @@ namespace LiteMolPluginInstance {
             // for this check Bootstrap/Visualization/Theme.ts and Visualization/Base/Theme.ts and it should be clear hwo to do that.
             //
             // You can create "validation based" coloring using this approach as it is not implemented in the plugin for now.
-            m => ({ index: m.atoms.chainIndex, property: m.chains.asymId }),  
+            m => ({ index: m.data.atoms.chainIndex, property: m.data.chains.asymId }),  
             colors,
             // this a fallback color used for elements not in the set 
             CoreVis.Color.fromRgb(0, 0, 123))
@@ -296,8 +324,8 @@ namespace LiteMolPluginInstance {
         //let query = AQ.query(AQ.sidechain);
         let query = AQ.query(AQ.equal(AQ.residueName, AQ.value('ALA')));
         let action = Transform.build()
-            .add(model, <Bootstrap.Tree.Transformer.To<Entity.Molecule.Selection>>Transformer.Molecule.CreateSelectionFromQuery, { query, name: 'Alg. query' }, { ref: 'alg-selection' })
-            .then(<Bootstrap.Tree.Transformer.To<Entity.Molecule.Visual>>Transformer.Molecule.CreateVisual, { style: Visualization.Molecule.Default.ForType.get('BallsAndSticks') });
+            .add(model, Transformer.Molecule.CreateSelectionFromQuery, { query, name: 'Alg. query' }, { ref: 'alg-selection' })
+            .then(Transformer.Molecule.CreateVisual, { style: Visualization.Molecule.Default.ForType.get('BallsAndSticks') });
             
         applyTransforms(action);
     });
@@ -364,7 +392,7 @@ namespace LiteMolPluginInstance {
 
             action
                 .add(molecule, Transformer.Molecule.CreateModel, { modelIndex: i }, { isBinding: false, ref: 'model-' + i })
-                .then(<any>Transformer.Molecule.CreateVisual, { style }, { ref: 'model-visual-' + i });
+                .then(Transformer.Molecule.CreateVisual, { style }, { ref: 'model-visual-' + i });
         }
         
         applyTransforms(action);
@@ -383,9 +411,8 @@ namespace LiteMolPluginInstance {
         Bootstrap.Command.Entity.Highlight.dispatch(plugin.context, { entities: plugin.context.select('model-visual-0' /* indexed from 0 */), isOn: false });
     });
              
-    export function create(target: HTMLElement) {
-        
-        let spec: Plugin.Specification = {
+    export function create(target: HTMLElement) {        
+        let customSpecification: Plugin.Specification = {
             settings: {
                 // currently these are all the 'global' settings available 
                 'molecule.model.defaultQuery': `residues({ name: 'ALA' })`,
@@ -456,6 +483,9 @@ namespace LiteMolPluginInstance {
                 
                 // this shows what atom/residue is the pointer currently over
                 Bootstrap.Behaviour.Molecule.HighlightElementInfo,
+
+                // when the same element is clicked twice in a row, the selection is emptied
+                Bootstrap.Behaviour.UnselectElementOnRepeatedClick,
                 
                 // distance to the last "clicked" element
                 Bootstrap.Behaviour.Molecule.DistanceToLastClickedElement,
@@ -476,6 +506,7 @@ namespace LiteMolPluginInstance {
                 Plugin.Components.Transform.View(LayoutRegion.Right),
                 Plugin.Components.Context.Log(LayoutRegion.Bottom, true),
                 Plugin.Components.Context.Overlay(LayoutRegion.Root),
+                Plugin.Components.Context.Toast(LayoutRegion.Main, true),
                 Plugin.Components.Context.BackgroundTasks(LayoutRegion.Main, true)
             ],
             viewport: {
@@ -491,8 +522,8 @@ namespace LiteMolPluginInstance {
             }
         }
 
-        let plugin = new Plugin.Instance(spec, target);
-        plugin.context.logger.message(`LiteMol Viewer ${Plugin.VERSION.number}`);
+        let plugin = Plugin.create({ target, customSpecification, layoutState: { hideControls: true } });
+        plugin.context.logger.message(`LiteMol Plugin Commands Example ${Plugin.VERSION.number}`);
         return plugin;
     }
     

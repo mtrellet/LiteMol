@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 David Sehnal, licensed under Apache 2.0, See LICENSE file for more info.
+ * Copyright (c) 2016 - now David Sehnal, licensed under Apache 2.0, See LICENSE file for more info.
  */
 
 namespace LiteMol.Example {
@@ -16,8 +16,7 @@ namespace LiteMol.Example {
     //
     // Transforms transform entities. On how to define custom entities, check LiteMol.Bootstrap/Entity/Types.ts where there are plenty of examples.
     export class CoordianteStreamingCustomView extends LiteMol.Plugin.Views.Transform.ControllerBase<
-        Bootstrap.Components.Transform.Controller<Transformer.Molecule.CoordinateStreaming.InitStreamingParams>, // you dont have to use these full type annotations, and just use "any" type instead, but then you will loose code completition. 
-        Transformer.Molecule.CoordinateStreaming.InitStreamingParams> {
+        Bootstrap.Components.Transform.Controller<Transformer.Molecule.CoordinateStreaming.InitStreamingParams>> { // you dont have to use these full type annotations, and just use "any" type instead, but then you will loose code completition.
         
         // this is for demonstration only, for dynamic options, store them in the transform params or in the underlying entity props.
         private servers = [

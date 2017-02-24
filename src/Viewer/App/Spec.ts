@@ -1,12 +1,11 @@
 /*
- * Copyright (c) 2016 David Sehnal, licensed under Apache 2.0, See LICENSE file for more info.
+ * Copyright (c) 2016 - now David Sehnal, licensed under Apache 2.0, See LICENSE file for more info.
  */
 
 namespace LiteMol.Viewer {
     
     import Views = Plugin.Views;
     import Bootstrap = LiteMol.Bootstrap;
-    import Entity = Bootstrap.Entity;
     import Transformer = Bootstrap.Entity.Transformer;    
     import LayoutRegion = Bootstrap.Components.LayoutRegion;
     
@@ -18,12 +17,14 @@ namespace LiteMol.Viewer {
             'molecule.coordinateStreaming.defaultServer': 'https://webchemdev.ncbr.muni.cz/CoordinateServer',
             'molecule.downloadBinaryCIFFromCoordinateServer.server': 'https://webchemdev.ncbr.muni.cz/CoordinateServer',
             'molecule.coordinateStreaming.defaultRadius': 10,
-            'density.defaultVisualBehaviourRadius': 5
+            'density.defaultVisualBehaviourRadius': 5,
+
+            'extensions.densityStreaming.defaultServer': 'https://webchem.ncbr.muni.cz/DensityServer/'
         },
         transforms: [
             // Root transforms -- things that load data.
             { transformer: PDBe.Data.DownloadMolecule, view: Views.Transform.Data.WithIdField },
-            { transformer: PDBe.Data.DownloadDensity, view: Views.Transform.Data.WithIdField },
+            { transformer: PDBe.Data.DownloadDensity, view: PDBe.Views.DownloadDensityView },
             { transformer: PDBe.Data.DownloadBinaryCIFFromCoordinateServer, view: Viewer.PDBe.Views.DownloadBinaryCIFFromCoordinateServerView, initiallyCollapsed: true },
             { transformer: Transformer.Molecule.CoordinateStreaming.InitStreaming, view: Views.Transform.Molecule.InitCoordinateStreaming, initiallyCollapsed: true },
             { transformer: DataSources.DownloadMolecule, view: Views.Transform.Molecule.DownloadFromUrl, initiallyCollapsed: true },
@@ -49,19 +50,25 @@ namespace LiteMol.Viewer {
             { transformer: Transformer.Molecule.CreateVisual, view: Views.Transform.Molecule.CreateVisual },
             
             // density transforms
+            { transformer: Transformer.Density.CreateFromCif, view: Views.Transform.Molecule.CreateFromMmCif },
             { transformer: Transformer.Density.CreateVisual, view: Views.Transform.Density.CreateVisual },
             { transformer: Transformer.Density.CreateVisualBehaviour, view: Views.Transform.Density.CreateVisualBehaviour },
+            { transformer: Extensions.DensityStreaming.Create, view: Extensions.DensityStreaming.CreateView },
+            { transformer: Extensions.DensityStreaming.CreateStreaming, view: Extensions.DensityStreaming.StreamingView },
             
             // Coordinate streaming
             { transformer: Transformer.Molecule.CoordinateStreaming.CreateBehaviour, view: Views.Transform.Empty, initiallyCollapsed: true },
             
-            // Validation report
+            // Validation reports
             { transformer: PDBe.Validation.DownloadAndCreate, view: Views.Transform.Empty },
             { transformer: PDBe.Validation.ApplyTheme, view: Views.Transform.Empty },
+
+            { transformer: ValidatorDB.DownloadAndCreate, view: Views.Transform.Empty },
+            { transformer: ValidatorDB.ApplyTheme, view: Views.Transform.Empty },
             
             // annotations
             { transformer: PDBe.SequenceAnnotation.DownloadAndCreate, view: Views.Transform.Empty, initiallyCollapsed: true },
-            { transformer: PDBe.SequenceAnnotation.CreateSingle, view: PDBe.Views.CreateSequenceAnnotationView, initiallyCollapsed: true }
+            { transformer: PDBe.SequenceAnnotation.CreateSingle, view: PDBe.Views.CreateSequenceAnnotationView, initiallyCollapsed: true },
         ],
         behaviours: [
             // you will find the source of all behaviours in the Bootstrap/Behaviour directory
@@ -98,6 +105,7 @@ namespace LiteMol.Viewer {
             Plugin.Components.Transform.View(LayoutRegion.Right),
             Plugin.Components.Context.Log(LayoutRegion.Bottom, true),
             Plugin.Components.Context.Overlay(LayoutRegion.Root),
+            Plugin.Components.Context.Toast(LayoutRegion.Main, true),
             Plugin.Components.Context.BackgroundTasks(LayoutRegion.Main, true)
         ],
         viewport: { 

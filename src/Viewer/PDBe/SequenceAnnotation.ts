@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 David Sehnal, licensed under Apache 2.0, See LICENSE file for more info.
+ * Copyright (c) 2016 - now David Sehnal, licensed under Apache 2.0, See LICENSE file for more info.
  */
 
 namespace LiteMol.Viewer.PDBe.SequenceAnnotation {    
@@ -7,26 +7,19 @@ namespace LiteMol.Viewer.PDBe.SequenceAnnotation {
     import Transformer = Bootstrap.Entity.Transformer;
     import Query = LiteMol.Core.Structure.Query;
     
-    export interface AnnotationsProps extends Entity.CommonProps { data: any }
-    export interface Annotations extends Entity<Annotations, AnnotationsType, AnnotationsProps> { }         
-    export interface AnnotationsType extends Entity.Type<AnnotationsType, Annotations, AnnotationsProps> { }   
-    export const Annotations = Entity.create<Annotations, AnnotationsType, AnnotationsProps>({ name: 'PDBe Sequence Annotations', typeClass: 'Data', shortName: 'SA', description: 'Represents PDBe sequence annotation data.' });
+    export interface Annotations extends Entity<{ data: any }> { }
+    export const Annotations = Entity.create<{ data: any }>({ name: 'PDBe Sequence Annotations', typeClass: 'Data', shortName: 'SA', description: 'Represents PDBe sequence annotation data.' });
+
+    export interface Annotation extends Entity<{ query: Query.Source; color: Visualization.Color; }> { }
+    export const Annotation = Entity.create<{ query: Query.Source; color: Visualization.Color; }>({ name: 'PDBe Sequence Annotation', typeClass: 'Object', shortName: 'SA', description: 'Represents PDBe sequence annotation.' }, { isSilent: true, isFocusable: true });
     
-    export interface AnnotationProps extends Entity.CommonProps { query: Query.Source; color: Visualization.Color; }
-    export interface Annotation extends Entity<Annotation, AnnotationType, AnnotationProps> { }         
-    export interface AnnotationType extends Entity.Type<AnnotationType, Annotation, AnnotationProps> { }   
-    export const Annotation = Entity.create<Annotation, AnnotationType, AnnotationProps>({ name: 'PDBe Sequence Annotation', typeClass: 'Object', shortName: 'SA', description: 'Represents PDBe sequence annotation.' }, { isSilent: true, isFocusable: true });
-    
-    export interface BehaviourProps extends Entity.Behaviour.Props<Interactivity.Behaviour> { }
-    export interface Behaviour extends Entity<Behaviour, BehaviourType, BehaviourProps> { }         
-    export interface BehaviourType extends Entity.Type<BehaviourType, Behaviour, BehaviourProps> { }   
-    export const Behaviour = Entity.create<Behaviour, BehaviourType, BehaviourProps>({ name: 'PDBe Sequence Annotation Behaviour', typeClass: 'Behaviour', shortName: 'SA', description: 'Represents PDBe sequence annoation behaviour.' });
-    
-    
+    export interface Behaviour extends Entity<Entity.Behaviour.Props<Interactivity.Behaviour>> { }
+    export const Behaviour = Entity.create<Entity.Behaviour.Props<Interactivity.Behaviour>>({ name: 'PDBe Sequence Annotation Behaviour', typeClass: 'Behaviour', shortName: 'SA', description: 'Represents PDBe sequence annoation behaviour.' });
+        
     namespace Interactivity {
         
         export class Behaviour implements Bootstrap.Behaviour.Dynamic {
-            private node: SequenceAnnotation.Behaviour = <any>void 0;
+            private node: Entity.Behaviour.Any = <any>void 0;
             private current: Annotation | undefined = void 0;
             private subs: Bootstrap.Rx.IDisposable[] = [];
             
@@ -42,7 +35,7 @@ namespace LiteMol.Viewer.PDBe.SequenceAnnotation {
                 this.node = <any>void 0;
             }
                     
-            register(behaviour: SequenceAnnotation.Behaviour) {
+            register(behaviour: Entity.Behaviour.Any) {
                 this.node = behaviour;
                 this.subs.push(this.context.behaviours.currentEntity.subscribe(e => this.update(e)));
                 this.subs.push(Bootstrap.Command.Entity.Highlight.getStream(this.context).subscribe(e => {
@@ -81,7 +74,7 @@ namespace LiteMol.Viewer.PDBe.SequenceAnnotation {
             }
             
             private setCached(a: Annotation, model: Entity.Molecule.Model, theme: Visualization.Theme) {
-                let e = this.context.entityCache.set(a, `theme-${model.id}`, theme);                
+                this.context.entityCache.set(a, `theme-${model.id}`, theme);                
             }
             
             private highlight() {
@@ -147,11 +140,9 @@ namespace LiteMol.Viewer.PDBe.SequenceAnnotation {
         const selectionColor = Visualization.Theme.Default.SelectionColor;
         const highlightColor = Visualization.Theme.Default.HighlightColor;
     
-        function createResidueMap(model: LiteMol.Core.Structure.MoleculeModel, fs: Query.FragmentSeq) {
-            let map = new Uint8Array(model.residues.count);            
-            let mId = model.modelId;
-            let residueIndex = model.atoms.residueIndex;
-            let { asymId, entityId, seqNumber, insCode } = model.residues;              
+        function createResidueMap(model: LiteMol.Core.Structure.Molecule.Model, fs: Query.FragmentSeq) {
+            let map = new Uint8Array(model.data.residues.count);            
+            let residueIndex = model.data.atoms.residueIndex;
             for (let f of fs.fragments) {
                 for (let i of f.atomIndices) {
                     map[residueIndex[i]] = 1;
@@ -166,16 +157,16 @@ namespace LiteMol.Viewer.PDBe.SequenceAnnotation {
             let fs = q(model.queryContext);                        
             let map = createResidueMap(model, fs);
             
-            let colors = new Map<string, LiteMol.Visualization.Color>();
+            let colors = Core.Utils.FastMap.create<string, LiteMol.Visualization.Color>();
             colors.set('Uniform', defaultColor);
             colors.set('Bond', defaultColor);
             colors.set('Selection', selectionColor);
             colors.set('Highlight', highlightColor);
             
-            let colorMap = new Map<number, Visualization.Color>();
+            let colorMap = Core.Utils.FastMap.create<number, Visualization.Color>();
             colorMap.set(1, color);
             
-            let residueIndex = model.atoms.residueIndex;            
+            let residueIndex = model.data.atoms.residueIndex;            
             let mapping = Visualization.Theme.createColorMapMapping(i => map[residueIndex[i]], colorMap, defaultColor);
             return Visualization.Theme.createMapping(mapping, { colors, interactive: true, transparency: { alpha: 1.0 } });
         }     
@@ -221,7 +212,7 @@ namespace LiteMol.Viewer.PDBe.SequenceAnnotation {
             defaultParams: () => ({ }),
             isUpdatable: true
         }, (context, a, t) => { 
-            return Bootstrap.Task.create<Annotation>(`Sequence Annotation`, 'Background', ctx => {                
+            return Bootstrap.Task.create<Annotation>(`Sequence Annotation`, 'Background', async ctx => {                
                 let data = t.params.data;                
                 let query =
                     Query.or.apply(null, data.mappings.map((m: any) =>
@@ -230,7 +221,7 @@ namespace LiteMol.Viewer.PDBe.SequenceAnnotation {
                             { seqNumber: m.start.residue_number, insCode: getInsCode(m.start.author_insertion_code) },
                             { seqNumber: m.end.residue_number, insCode: getInsCode(m.end.author_insertion_code) })))
                         .union();                                    
-                ctx.resolve(Annotation.create(t, { label: data.identifier, description: t.params.id, query, color: t.params.color! }));
+                return Annotation.create(t, { label: data.identifier, description: t.params.id, query, color: t.params.color! });
             });
         }       
     );
@@ -238,17 +229,15 @@ namespace LiteMol.Viewer.PDBe.SequenceAnnotation {
     const Parse = Bootstrap.Tree.Transformer.create<Entity.Data.String, Annotations, { }>({
             id: 'pdbe-sequence-annotations-parse',
             name: 'PDBe Sequence Annotations',
-            description: 'Parse sequence annotaions JSON.',
+            description: 'Parse sequence annotation JSON.',
             from: [Entity.Data.String],
             to: [Annotations],
             defaultParams: () => ({})
         }, (context, a, t) => { 
-            return Bootstrap.Task.create<Annotations>(`Sequence Annotations`, 'Normal', ctx => {
-                ctx.update('Parsing...');
-                ctx.schedule(() => {
-                    let data = JSON.parse(a.props.data);               
-                    ctx.resolve(Annotations.create(t, { label: 'Sequence Annotations', data }))
-                });
+            return Bootstrap.Task.create<Annotations>(`Sequence Annotations`, 'Normal', async ctx => {
+                await ctx.updateProgress('Parsing...');                
+                let data = JSON.parse(a.props.data);               
+                return Annotations.create(t, { label: 'Sequence Annotations', data });
             }).setReportTime(true);
         }       
     );
@@ -290,7 +279,7 @@ namespace LiteMol.Viewer.PDBe.SequenceAnnotation {
     }, (context, a, t) => {        
         let id = a.props.molecule.id.trim().toLocaleLowerCase();                    
         return Bootstrap.Tree.Transform.build()
-            .add(a, <Bootstrap.Tree.Transformer.To<Entity.Data.String>>Transformer.Data.Download, { url: `https://www.ebi.ac.uk/pdbe/api/mappings/${id}`, type: 'String', id, description: 'Annotation Data' })
+            .add(a, Transformer.Data.Download, { url: `https://www.ebi.ac.uk/pdbe/api/mappings/${id}`, type: 'String', id, description: 'Annotation Data', title: 'Annotation' })
             .then(Parse, { }, { isBinding: true })
             .then(Build, { }, { isBinding: true });
     });
